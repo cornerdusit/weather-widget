@@ -12,7 +12,7 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      color: #00ff00;
+      color: #ff9100;
       font-family: 'Monospace', monospace;
     }
 
@@ -129,6 +129,12 @@
       line-height: 1;
     }
 
+    #countdown {
+      font-size: 12pt;
+      color: white;
+      opacity: 0.5;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -151,8 +157,9 @@
     <div id="toronto-time" class="time-display-column info-text">Loading Toronto time...</div>
   </div>
 
+  <div id="countdown"></div>
+
   <script>
-    // Global store for sunrise/sunset times to check day/night in updateCityTime()
     const citySunData = {
       bangkok: { sunrise: null, sunset: null },
       toronto: { sunrise: null, sunset: null }
@@ -207,10 +214,8 @@
       }
     }
 
-    // Fetch weather + sunrise/sunset + AQI for a city
     async function fetchWeather(city, lat, lon, elementId, flagEmoji) {
       try {
-        // Fetch weather & daily sunrise/sunset & AQI data
         const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`;
         const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi&timezone=auto`;
 
@@ -222,18 +227,15 @@
         const weatherData = await weatherRes.json();
         const aqiData = await aqiRes.json();
 
-        // Extract needed info
         const temp = Math.round(weatherData.current.temperature_2m);
         const code = weatherData.current.weather_code;
         const min = Math.round(weatherData.daily.temperature_2m_min[0]);
         const max = Math.round(weatherData.daily.temperature_2m_max[0]);
         const icon = getWeatherIcon(code);
         const aqi = aqiData.current.us_aqi;
-
         const sunrise = weatherData.daily.sunrise[0];
         const sunset = weatherData.daily.sunset[0];
 
-        // Store sunrise and sunset time for day/night calculation
         citySunData[city.toLowerCase()] = {
           sunrise: new Date(sunrise),
           sunset: new Date(sunset)
@@ -254,51 +256,23 @@
       }
     }
 
-    // Update city time display with day/night icon based on sunrise/sunset
     function updateCityTime(elementId, cityKey, timeZone) {
       const now = new Date();
-
-      // Format date & time strings
       const optionsDate = {
-        weekday: 'short',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        timeZone: timeZone
+        weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: timeZone
       };
-
       const optionsTime = {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-        timeZone: timeZone
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: timeZone
       };
 
-      const cityDate = now.toLocaleDateString('en-GB', optionsDate)
-                            .toUpperCase()
-                            .replace(',', '');
-
+      const cityDate = now.toLocaleDateString('en-GB', optionsDate).toUpperCase().replace(',', '');
       const cityTime = now.toLocaleTimeString('en-US', optionsTime);
-
-      // Determine if it is day or night using sunrise and sunset from citySunData
-      let icon = '❓'; // fallback icon
-
+      let icon = '❓';
       const sunData = citySunData[cityKey];
       if (sunData && sunData.sunrise && sunData.sunset) {
-        // We compare times in the city's timezone by converting current time to that timezone
-        // Convert now to the city's timezone offset in ms
-        // Trick: Using toLocaleString with timeZone and parsing back to date works for offset
-
-        // Get current time in the city's timezone as a Date object
         const nowStr = now.toLocaleString('en-US', { timeZone });
         const cityNow = new Date(nowStr);
-
-        if (cityNow >= sunData.sunrise && cityNow < sunData.sunset) {
-          icon = '☀️'; // day
-        } else {
-          icon = '🌙'; // night
-        }
+        icon = (cityNow >= sunData.sunrise && cityNow < sunData.sunset) ? '☀️' : '🌙';
       }
 
       document.getElementById(elementId).innerHTML =
@@ -312,25 +286,39 @@
       fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
     }
 
-    // Toggle Price + Timestamp
+    function updateCountdown() {
+      const today = new Date();
+      const endDate = new Date("2025-12-31T00:00:00");
+      const diffTime = endDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      document.getElementById("countdown").textContent = `${diffDays} days to Kiki and Kitty Japan Trip`;
+    }
+
     document.getElementById("toggle-price-btn").addEventListener("click", () => {
       document.getElementById("price").classList.toggle("hidden");
       document.getElementById("timestamp").classList.toggle("hidden");
     });
 
-    // Initial calls
     fetchPrice();
     updateWeather();
     updateCityTime('bangkok-time', 'bangkok', 'Asia/Bangkok');
     updateCityTime('toronto-time', 'toronto', 'America/Toronto');
+    updateCountdown();
 
-    // Intervals
     setInterval(fetchPrice, 500);
     setInterval(updateWeather, 60000);
     setInterval(() => {
       updateCityTime('bangkok-time', 'bangkok', 'Asia/Bangkok');
       updateCityTime('toronto-time', 'toronto', 'America/Toronto');
     }, 1000);
+
+    // Refresh countdown at midnight
+    const now = new Date();
+    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1) - now;
+    setTimeout(() => {
+      updateCountdown();
+      setInterval(updateCountdown, 86400000); // every 24h
+    }, msUntilMidnight);
   </script>
 </body>
 </html>
