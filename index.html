@@ -24,12 +24,27 @@
       font-weight: 800;
     }
 
+    .hidden {
+      display: none;
+    }
+
+    #toggle-price-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 20pt;
+      background: none;
+      border: none;
+      color: #00ff00;
+      cursor: pointer;
+    }
+
     hr {
       width: 80%;
       border: none;
       border-top: 1px solid #00ff00;
-      margin: 20px 0;
-      opacity: 0.4;
+      margin: 8px 0;
+      opacity: 0.5;
     }
 
     .info-text {
@@ -44,6 +59,15 @@
       font-weight: bold;
       font-size: 28pt;
     }
+
+    .temp-cold { color: #00f; }
+    .temp-cool { color: #00ffff; }
+    .temp-warm { color: #ffff00; }
+    .temp-hot { color: #ff0000; }
+
+    .aqi-good { color: #00ff00; }
+    .aqi-moderate { color: #ffff00; }
+    .aqi-bad { color: #ff0000; }
 
     .large-time {
       font-size: 32pt;
@@ -83,9 +107,16 @@
       width: 50%;
       text-align: center;
     }
+
+    .weather-icon {
+      font-size: 32pt;
+      display: inline-block;
+      margin-left: 5px;
+    }
   </style>
 </head>
 <body>
+  <button id="toggle-price-btn">👁️</button>
   <div id="price">--</div>
   <div id="timestamp" class="info-text">Fetching...</div>
   <hr />
@@ -115,6 +146,32 @@
       return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
     }
 
+    function getTempClass(temp) {
+      if (temp <= 0) return 'temp-cold';
+      if (temp <= 15) return 'temp-cool';
+      if (temp <= 25) return 'temp-warm';
+      return 'temp-hot';
+    }
+
+    function getAQIClass(aqi) {
+      if (aqi <= 50) return 'aqi-good';
+      if (aqi <= 99) return 'aqi-moderate';
+      return 'aqi-bad';
+    }
+
+    function getWeatherIcon(code) {
+      const map = {
+        0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+        45: "🌫️", 48: "🌫️",
+        51: "🌦️", 53: "🌧️", 55: "🌧️",
+        61: "🌦️", 63: "🌧️", 65: "🌧️",
+        71: "🌨️", 73: "🌨️", 75: "❄️",
+        80: "🌦️", 81: "🌧️", 82: "🌧️",
+        95: "⛈️", 96: "🌩️", 99: "🌩️"
+      };
+      return map[code] || "❓";
+    }
+
     async function fetchPrice() {
       try {
         const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
@@ -127,15 +184,6 @@
         document.getElementById('timestamp').textContent = 'Failed to fetch price';
       }
     }
-
-    const weatherCodes = {
-      0: "Clear", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
-      45: "Fog", 48: "Rime fog",
-      51: "Light drizzle", 53: "Moderate drizzle", 55: "Dense drizzle",
-      61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain",
-      80: "Slight showers", 81: "Moderate showers", 82: "Violent showers",
-      95: "Thunderstorm", 99: "Severe thunderstorm"
-    };
 
     async function fetchWeather(city, lat, lon, elementId, flagEmoji) {
       try {
@@ -154,18 +202,17 @@
         const code = weatherData.current.weather_code;
         const min = Math.round(weatherData.daily.temperature_2m_min[0]);
         const max = Math.round(weatherData.daily.temperature_2m_max[0]);
-        const condition = weatherCodes[code] || "Unknown";
+        const icon = getWeatherIcon(code);
         const aqi = aqiData.current.us_aqi;
 
-        const tempColor = temp <= 0 ? 'blue' :
-                          temp <= 15 ? 'lightblue' :
-                          temp <= 25 ? 'yellow' : 'red';
+        const tempClass = getTempClass(temp);
+        const aqiClass = getAQIClass(aqi);
 
         document.getElementById(elementId).innerHTML =
-          `${flagEmoji} ${city}: <br>` +
-          `<span class="current-temp" style="color:${tempColor}">${temp}°C</span><br>` +
-          `L:${min}°/H:${max}° ${condition}<br>` +
-          `AQI: ${aqi}`;
+          `${flagEmoji} ${city}:<br>` +
+          `<span class="current-temp ${tempClass}">${temp}°C</span><br>` +
+          `L:${min}°/H:${max}° <span class="weather-icon">${icon}</span><br>` +
+          `AQI: <span class="${aqiClass}">${aqi}</span>`;
       } catch (error) {
         console.error(`Failed to fetch data for ${city}:`, error);
         document.getElementById(elementId).textContent = `${flagEmoji} ${city} Weather/AQI: Failed to fetch`;
@@ -202,8 +249,15 @@
 
       const cityTime = now.toLocaleTimeString('en-US', optionsTime);
 
-      document.getElementById(elementId).innerHTML = `<span class="small-date">${cityDate} <span class="large-time">${cityTime}</span>`;
+      document.getElementById(elementId).innerHTML =
+        `<span class="small-date">${cityDate} <span class="large-time">${cityTime}</span>`;
     }
+
+    // Toggle Price + Timestamp
+    document.getElementById("toggle-price-btn").addEventListener("click", () => {
+      document.getElementById("price").classList.toggle("hidden");
+      document.getElementById("timestamp").classList.toggle("hidden");
+    });
 
     fetchPrice();
     updateWeather();
