@@ -1,13 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <title>BTC/USDT Price + Weather</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      background-color: #000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: #00ff00; /* Default green color for most text */
+      font-family: monospace;
+    }
+
+    #price {
+      font-size: 140pt;
+      line-height: 1;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    hr {
+      width: 80%;
+      border: none;
+      border-top: 1px solid #00ff00;
+      margin: 20px 0;
+      opacity: 0.4;
+    }
+
+    /* Common styles for weather and timestamp info */
+    /* Note: info-text has opacity: 0.6 */
+    .info-text {
+      font-size: 14pt;
+      opacity: 0.6;
+      margin-top: 5px;
+      white-space: pre-line;
+      text-align: center;
+    }
+
+    .current-temp {
+      font-weight: bold;
+      font-size: 28pt; /* double 14pt */
+    }
+
+    /* New style for the larger time text */
+    .large-time {
+      font-size: 32pt; /* Making the HH:MM:SS bigger */
+      font-weight: bold; /* Optional: Make it bold for emphasis */
+      color: #FFFFFF;   /* Set color to white */
+      opacity: 0.8;    /* Set opacity to 80% */
+    }
+
+    /* Weather container styling */
+    #weather-container {
+      display: flex;
+      justify-content: center;
+      width: 80%;
+      gap: 40px; /* space between columns */
+    }
+
+    /* Individual weather box styling */
+    .weather {
+      width: 50%;
+      white-space: pre-line;
+      text-align: center;
+    }
+
+    /* New container for time displays */
+    #time-display-container {
+      display: flex;
+      justify-content: center;
+      width: 80%; /* Match weather container width */
+      gap: 40px; /* Match weather container gap */
+    }
+
+    /* Individual time display styling */
+    .time-display-column { /* New class for individual time columns */
+      width: 50%; /* Each takes half the container width */
+      text-align: center;
+    }
+  </style>
 </head>
 <body>
+  <div id="price">--</div>
+  <div id="timestamp" class="info-text">Fetching...</div>
+  <hr />
 
-<a class="weatherwidget-io" href="https://forecast7.com/en/13d76100d50/bangkok/" data-label_1="BKK" data-label_2="WEATHER" data-font="Arial Black" data-theme="dark" >BKK WEATHER</a>
-<script>
-!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
-</script>
+  <div id="weather-container">
+    <div class="weather info-text" id="weather-bkk">
+      Loading Bangkok weather...
+    </div>
+    <div class="weather info-text" id="weather-toronto">
+      Loading Toronto weather...
+    </div>
+  </div>
 
+  <div id="time-display-container">
+    <div id="bangkok-time" class="time-display-column info-text">Loading Bangkok time...</div>
+    <div id="toronto-time" class="time-display-column info-text">Loading Toronto time...</div>
+  </div>
+
+  <script>
+    function getFormattedTime(dateObj) {
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const year = dateObj.getFullYear();
+      const hours = String(dateObj.getHours()).padStart(2, '0');
+      const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+      const seconds = String(dateObj.getSeconds()).padStart(2, '0');
+      return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+    }
+
+    async function fetchPrice() {
+      try {
+        const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+        const data = await res.json();
+        const price = Math.round(parseFloat(data.price));
+        document.getElementById('price').textContent = price;
+        document.getElementById('timestamp').textContent = `Updated: ${getFormattedTime(new Date())}`;
+      } catch {
+        document.getElementById('price').textContent = 'Error';
+        document.getElementById('timestamp').textContent = 'Failed to fetch price';
+      }
+    }
+
+    const weatherCodes = {
+      0: "Clear", 1: "Mainly clear", 2: "Partly cloudy", 3: "Overcast",
+      45: "Fog", 48: "Rime fog",
+      51: "Light drizzle", 53: "Moderate drizzle", 55: "Dense drizzle",
+      61: "Slight rain", 63: "Moderate rain", 65: "Heavy rain",
+      80: "Slight showers", 81: "Moderate showers", 82: "Violent showers",
+      95: "Thunderstorm", 99: "Severe thunderstorm"
+    };
+
+    async function fetchWeather(city, lat, lon, elementId, flagEmoji) {
+      try {
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        const temp = Math.round(data.current.temperature_2m);
+        const code = data.current.weather_code;
+        const min = Math.round(data.daily.temperature_2m_min[0]);
+        const max = Math.round(data.daily.temperature_2m_max[0]);
+        const condition = weatherCodes[code] || "Unknown";
+
+        document.getElementById(elementId).innerHTML =
+          `${flagEmoji} ${city}: <br>` +
+          `<span class="current-temp">${temp}°C</span><br>` +
+          `L:${min}°/H:${max}°<br>` +
+          `${condition}`;
+      } catch {
+        document.getElementById(elementId).textContent = `${flagEmoji} ${city} Weather: Failed to fetch`;
+      }
+    }
+
+    function updateWeather() {
+      fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
+      fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
+    }
+
+    function updateCityTime(elementId, timeZone, cityName) {
+      const now = new Date();
+      const cityTime = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false, // Use 24-hour format
+        timeZone: timeZone
+      });
+      document.getElementById(elementId).innerHTML = `<span class="large-time">${cityTime}</span>`;
+    }
+
+    fetchPrice();
+    updateWeather();
+    updateCityTime('bangkok-time', 'Asia/Bangkok', 'Bangkok');
+    updateCityTime('toronto-time', 'America/Toronto', 'Toronto');
+
+    setInterval(fetchPrice, 500);       // price every 0.5 sec
+    setInterval(updateWeather, 60000);  // weather every 60 sec
+    setInterval(() => {
+      updateCityTime('bangkok-time', 'Asia/Bangkok', 'Bangkok');
+      updateCityTime('toronto-time', 'America/Toronto', 'Toronto');
+    }, 1000);
+  </script>
 </body>
 </html>
