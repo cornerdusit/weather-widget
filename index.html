@@ -13,7 +13,7 @@
       justify-content: center;
       align-items: center;
       color: #00ff00; /* Default green color for most text */
-      font-family: 'Roboto', sans-serif;
+      font-family: 'Monospace', monospace; /* Changed font-family */
     }
 
     #price {
@@ -51,8 +51,16 @@
     .large-time {
       font-size: 32pt; /* Making the HH:MM:SS bigger */
       font-weight: bold; /* Optional: Make it bold for emphasis */
-      color: #FFFFFF;   /* Set color to white */
-      opacity: 0.8;    /* Set opacity to 80% */
+      color: #FFFFFF;    /* Set color to white */
+      opacity: 0.8;      /* Set opacity to 80% */
+    }
+
+    /* New style for the smaller date text */
+    .small-date {
+      font-size: 24pt; /* Smaller font size for date */
+      font-weight: normal; /* Normal font weight for date */
+      color: #00ff00; /* Revert to green for date, or choose another color */
+      opacity: 0.6; /* Match info-text opacity */
     }
 
     /* Weather container styling */
@@ -164,28 +172,46 @@
       fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
     }
 
-    function updateCityTime(elementId, timeZone, cityName) {
+    function updateCityTime(elementId, timeZone) {
       const now = new Date();
-      const cityTime = now.toLocaleTimeString('en-US', {
+
+      const optionsDate = {
+        weekday: 'short',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: timeZone
+      };
+
+      const optionsTime = {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false, // Use 24-hour format
+        hour12: false,
         timeZone: timeZone
-      });
-      document.getElementById(elementId).innerHTML = `<span class="large-time">${cityTime}</span>`;
+      };
+
+      // Format date and remove comma, then append with space
+      const cityDate = now.toLocaleDateString('en-GB', optionsDate)
+                          .toUpperCase()
+                          .replace(',', ''); // Remove comma
+
+      const cityTime = now.toLocaleTimeString('en-US', optionsTime);
+
+      // Combine date and time on one line
+      document.getElementById(elementId).innerHTML = `<span class="small-date">${cityDate} <span class="large-time">${cityTime}</span>`;
     }
 
     fetchPrice();
     updateWeather();
-    updateCityTime('bangkok-time', 'Asia/Bangkok', 'Bangkok');
-    updateCityTime('toronto-time', 'America/Toronto', 'Toronto');
+    updateCityTime('bangkok-time', 'Asia/Bangkok');
+    updateCityTime('toronto-time', 'America/Toronto');
 
-    setInterval(fetchPrice, 500);       // price every 0.5 sec
-    setInterval(updateWeather, 60000);  // weather every 60 sec
+    setInterval(fetchPrice, 500);
+    setInterval(updateWeather, 60000);
     setInterval(() => {
-      updateCityTime('bangkok-time', 'Asia/Bangkok', 'Bangkok');
-      updateCityTime('toronto-time', 'America/Toronto', 'Toronto');
+      updateCityTime('bangkok-time', 'Asia/Bangkok');
+      updateCityTime('toronto-time', 'America/Toronto');
     }, 1000);
   </script>
 </body>
