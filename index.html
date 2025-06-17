@@ -331,7 +331,7 @@
       if (sunData && sunData.sunrise && sunData.sunset) {
         const nowStr = now.toLocaleString('en-US', { timeZone });
         const cityNow = new Date(nowStr);
-        icon = (cityNow >= sunData.sunrise && cityNow < sunData.sunset) ? '☀️' : '🌙';
+        icon = (cityNow >= sunData.sunrise && cityNow < sunData.sunset) ? '🌞' : '🌚';
       }
 
       document.getElementById(elementId).innerHTML =
