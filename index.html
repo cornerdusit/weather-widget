@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>KITTU'S DASHBOARD</title>
+  <title>BTC/USDT Price + Weather</title>
   <style>
     html, body {
       margin: 0;
@@ -321,11 +321,11 @@
         weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: timeZone
       };
       const optionsTime = {
-        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false, timeZone: timeZone
+        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timeZone
       };
 
       const cityDate = now.toLocaleDateString('en-GB', optionsDate).toUpperCase().replace(',', '');
-      const cityTime = now.toLocaleTimeString('en-US', optionsTime);
+      const cityTime = now.toLocaleTimeString('en-GB', optionsTime);
       let icon = '❓';
       const sunData = citySunData[cityKey];
       if (sunData && sunData.sunrise && sunData.sunset) {
@@ -364,8 +364,8 @@
     updateCityTime('toronto-time', 'toronto', 'America/Toronto');
     updateCountdown();
 
-    setInterval(fetchPrice, 500);
-    setInterval(updateWeather, 60000);
+    setInterval(fetchPrice, 5000); // every 5 seconds
+    setInterval(updateWeather, 60000); // every 60 seconds
     setInterval(() => {
       updateCityTime('bangkok-time', 'bangkok', 'Asia/Bangkok');
       updateCityTime('toronto-time', 'toronto', 'America/Toronto');
