@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>BTC/USDT Price + Weather</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KITTU'S DASHBOARD</title>
   <style>
     html, body {
       margin: 0;
@@ -17,7 +18,7 @@
     }
 
     #price {
-      font-size: 110pt;
+      font-size: 140pt;
       line-height: 1;
       white-space: nowrap;
       text-align: center;
@@ -91,34 +92,33 @@
       opacity: 0.6;
     }
 
-    /* Container wrapping Bangkok and Toronto sections */
-    #cities-container {
+    #weather-container {
       display: flex;
       justify-content: center;
       width: 80%;
       gap: 40px;
     }
 
-    /* Each city container with weather + time stacked vertically */
-    #bangkok-container,
-    #toronto-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      width: 50%;
+    .weather {
+      white-space: pre-line;
+      text-align: center;
       background-color: rgba(255, 255, 255, 0.15);
       margin: 8px;
       padding: 12px;
       border-radius: 12px;
-      white-space: pre-line;
-      color: #ff9100;
+    }
+
+    #time-display-container {
+      display: flex;
+      justify-content: center;
+      width: 80%;
+      gap: 40px;
     }
 
     .time-display-column {
       text-align: center;
       line-height: 1;
       vertical-align: middle;
-      margin-top: 10px;
     }
 
     .daynight-icon {
@@ -134,37 +134,62 @@
       opacity: 0.5;
       margin-top: 20px;
       text-align: center;
+      width: 100%;
     }
 
-    /* Mobile breakpoint */
+    /* Containers for Bangkok and Toronto groupings */
+    #bangkok-container,
+    #toronto-container {
+      display: flex;
+      flex-direction: column;
+      width: 50%;
+      gap: 10px;
+    }
+
+    /* For desktop, side by side */
+    #main-weather-time-container {
+      display: flex;
+      justify-content: center;
+      width: 80%;
+      gap: 40px;
+      margin-top: 20px;
+    }
+
+    /* Mobile breakpoint for widths 500px and below */
     @media (max-width: 500px) {
-      body {
-        /* stack everything vertically */
-        flex-direction: column;
-        align-items: center;
+      html, body {
+        height: auto;
       }
 
-      #cities-container {
+      #price {
+        font-size: 80pt;
+        white-space: normal;
+      }
+
+      #toggle-price-btn {
+        top: 10px;
+        right: 10px;
+        font-size: 16pt;
+      }
+
+      #main-weather-time-container {
         flex-direction: column;
-        width: 90%;
+        width: 95%;
         gap: 20px;
       }
 
       #bangkok-container,
       #toronto-container {
         width: 100%;
-        margin: 0;
-        padding: 12px 0;
-      }
-
-      #price {
-        font-size: 100pt; /* smaller on mobile */
-        margin-bottom: 20px;
       }
 
       #countdown {
-        margin-top: 20px;
+        margin-top: 30px;
         font-size: 14pt;
+      }
+
+      body {
+        align-items: stretch;
       }
     }
   </style>
@@ -175,23 +200,19 @@
   <div id="timestamp" class="info-text">Fetching...</div>
   <hr />
 
-  <div id="cities-container">
+  <div id="main-weather-time-container">
     <div id="bangkok-container">
       <div class="weather info-text" id="weather-bkk">
         Loading Bangkok weather...
       </div>
-      <div id="bangkok-time" class="time-display-column info-text">
-        Loading Bangkok time...
-      </div>
+      <div id="bangkok-time" class="time-display-column info-text">Loading Bangkok time...</div>
     </div>
 
     <div id="toronto-container">
       <div class="weather info-text" id="weather-toronto">
         Loading Toronto weather...
       </div>
-      <div id="toronto-time" class="time-display-column info-text">
-        Loading Toronto time...
-      </div>
+      <div id="toronto-time" class="time-display-column info-text">Loading Toronto time...</div>
     </div>
   </div>
 
