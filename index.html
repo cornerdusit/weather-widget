@@ -43,8 +43,8 @@
       width: 80%;
       border: none;
       border-top: 1px solid #00ff00;
-      margin: 8px 0;
-      opacity: 0.5;
+      margin: 20px 0;
+      opacity: 0.4;
     }
 
     .info-text {
@@ -58,6 +58,14 @@
     .current-temp {
       font-weight: bold;
       font-size: 28pt;
+      vertical-align: middle;
+    }
+
+    .weather-icon {
+      font-size: 28pt;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 8px;
     }
 
     .temp-cold { color: #00f; }
@@ -94,6 +102,10 @@
       width: 50%;
       white-space: pre-line;
       text-align: center;
+      background-color: rgba(255, 255, 255, 0.15);
+      margin: 8px;
+      padding: 12px;
+      border-radius: 12px;
     }
 
     #time-display-container {
@@ -106,13 +118,17 @@
     .time-display-column {
       width: 50%;
       text-align: center;
+      line-height: 1;
+      vertical-align: middle;
     }
 
-    .weather-icon {
+    .daynight-icon {
       font-size: 32pt;
-      display: inline-block;
-      margin-left: 5px;
+      vertical-align: middle;
+      margin-left: 10px;
+      line-height: 1;
     }
+
   </style>
 </head>
 <body>
@@ -136,6 +152,12 @@
   </div>
 
   <script>
+    // Global store for sunrise/sunset times to check day/night in updateCityTime()
+    const citySunData = {
+      bangkok: { sunrise: null, sunset: null },
+      toronto: { sunrise: null, sunset: null }
+    };
+
     function getFormattedTime(dateObj) {
       const day = String(dateObj.getDate()).padStart(2, '0');
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -185,9 +207,11 @@
       }
     }
 
+    // Fetch weather + sunrise/sunset + AQI for a city
     async function fetchWeather(city, lat, lon, elementId, flagEmoji) {
       try {
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+        // Fetch weather & daily sunrise/sunset & AQI data
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`;
         const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi&timezone=auto`;
 
         const [weatherRes, aqiRes] = await Promise.all([
@@ -198,6 +222,7 @@
         const weatherData = await weatherRes.json();
         const aqiData = await aqiRes.json();
 
+        // Extract needed info
         const temp = Math.round(weatherData.current.temperature_2m);
         const code = weatherData.current.weather_code;
         const min = Math.round(weatherData.daily.temperature_2m_min[0]);
@@ -205,13 +230,23 @@
         const icon = getWeatherIcon(code);
         const aqi = aqiData.current.us_aqi;
 
+        const sunrise = weatherData.daily.sunrise[0];
+        const sunset = weatherData.daily.sunset[0];
+
+        // Store sunrise and sunset time for day/night calculation
+        citySunData[city.toLowerCase()] = {
+          sunrise: new Date(sunrise),
+          sunset: new Date(sunset)
+        };
+
         const tempClass = getTempClass(temp);
         const aqiClass = getAQIClass(aqi);
 
         document.getElementById(elementId).innerHTML =
           `${flagEmoji} ${city}:<br>` +
-          `<span class="current-temp ${tempClass}">${temp}°C</span><br>` +
-          `L:${min}°/H:${max}° <span class="weather-icon">${icon}</span><br>` +
+          `<span class="current-temp ${tempClass}">${temp}°C</span>` +
+          `<span class="weather-icon">${icon}</span><br>` +
+          `L:${min}°/H:${max}°<br>` +
           `AQI: <span class="${aqiClass}">${aqi}</span>`;
       } catch (error) {
         console.error(`Failed to fetch data for ${city}:`, error);
@@ -219,14 +254,11 @@
       }
     }
 
-    function updateWeather() {
-      fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
-      fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
-    }
-
-    function updateCityTime(elementId, timeZone) {
+    // Update city time display with day/night icon based on sunrise/sunset
+    function updateCityTime(elementId, cityKey, timeZone) {
       const now = new Date();
 
+      // Format date & time strings
       const optionsDate = {
         weekday: 'short',
         day: '2-digit',
@@ -249,8 +281,35 @@
 
       const cityTime = now.toLocaleTimeString('en-US', optionsTime);
 
+      // Determine if it is day or night using sunrise and sunset from citySunData
+      let icon = '❓'; // fallback icon
+
+      const sunData = citySunData[cityKey];
+      if (sunData && sunData.sunrise && sunData.sunset) {
+        // We compare times in the city's timezone by converting current time to that timezone
+        // Convert now to the city's timezone offset in ms
+        // Trick: Using toLocaleString with timeZone and parsing back to date works for offset
+
+        // Get current time in the city's timezone as a Date object
+        const nowStr = now.toLocaleString('en-US', { timeZone });
+        const cityNow = new Date(nowStr);
+
+        if (cityNow >= sunData.sunrise && cityNow < sunData.sunset) {
+          icon = '☀️'; // day
+        } else {
+          icon = '🌙'; // night
+        }
+      }
+
       document.getElementById(elementId).innerHTML =
-        `<span class="small-date">${cityDate} <span class="large-time">${cityTime}</span>`;
+        `<span class="small-date">${cityDate}</span> ` +
+        `<span class="large-time">${cityTime}</span>` +
+        `<span class="daynight-icon">${icon}</span>`;
+    }
+
+    function updateWeather() {
+      fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
+      fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
     }
 
     // Toggle Price + Timestamp
@@ -259,16 +318,18 @@
       document.getElementById("timestamp").classList.toggle("hidden");
     });
 
+    // Initial calls
     fetchPrice();
     updateWeather();
-    updateCityTime('bangkok-time', 'Asia/Bangkok');
-    updateCityTime('toronto-time', 'America/Toronto');
+    updateCityTime('bangkok-time', 'bangkok', 'Asia/Bangkok');
+    updateCityTime('toronto-time', 'toronto', 'America/Toronto');
 
+    // Intervals
     setInterval(fetchPrice, 500);
     setInterval(updateWeather, 60000);
     setInterval(() => {
-      updateCityTime('bangkok-time', 'Asia/Bangkok');
-      updateCityTime('toronto-time', 'America/Toronto');
+      updateCityTime('bangkok-time', 'bangkok', 'Asia/Bangkok');
+      updateCityTime('toronto-time', 'toronto', 'America/Toronto');
     }, 1000);
   </script>
 </body>
