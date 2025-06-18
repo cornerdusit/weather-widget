@@ -5,18 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BTC/USDT Price + Weather + AQI</title>
     <style>
+        /* Base styles for the body */
         html, body {
             margin: 0;
             height: 100%;
-            background-color: #000;
+            background-color: #000; /* Black background */
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            color: #ff9100;
+            color: #ff9100; /* Orange text color */
             font-family: 'Monospace', monospace;
             position: relative; /* For layering */
         }
+        /* Style for the BTC price display */
         #price {
             font-size: 100pt;
             line-height: 1;
@@ -24,13 +26,14 @@
             text-align: center;
             font-weight: 800;
             position: relative;
-            z-index: 2;
-            /* Initial transition for transform, color transition will be added via JS */
-            transition: transform 0.5s ease;
+            z-index: 2; /* Ensures price is above GIF */
+            transition: transform 0.5s ease; /* Initial transition for transform */
         }
+        /* Class to hide elements */
         .hidden {
             display: none;
         }
+        /* Style for the toggle price button */
         #toggle-price-btn {
             position: absolute;
             top: 20px;
@@ -38,16 +41,18 @@
             font-size: 20pt;
             background: none;
             border: none;
-            color: #00ff00;
+            color: #00ff00; /* Green button text */
             cursor: pointer;
-            z-index: 3;
+            z-index: 3; /* Ensures button is on top */
         }
+        /* Horizontal rule style */
         hr {
             width: 80%;
             border: none;
-            border-top: 1px solid #ff9100;
+            border-top: 1px solid #ff9100; /* Orange line */
             margin: 1px 0;
         }
+        /* General info text style */
         .info-text {
             font-size: 20pt;
             margin-top: 1px;
@@ -55,47 +60,54 @@
             text-align: center;
             font-weight: 800;
             position: relative;
-            z-index: 2;
+            z-index: 2; /* Ensures info text is above GIF */
         }
+        /* Current temperature display style */
         .current-temp {
             font-weight: 800;
             font-size: 40pt;
             vertical-align: middle;
         }
+        /* Weather icon style */
         .weather-icon {
             font-size: 40pt;
             display: inline-block;
             vertical-align: middle;
             margin-left: 8px;
         }
+        /* Temperature color classes */
         .temp-cold {
-            color: #00f;
+            color: #00f; /* Blue for cold */
         }
         .temp-cool {
-            color: #00ffff;
+            color: #00ffff; /* Cyan for cool */
         }
         .temp-warm {
-            color: #ffff00;
+            color: #ffff00; /* Yellow for warm */
         }
         .temp-hot {
-            color: #ff0000;
+            color: #ff0000; /* Red for hot */
         }
+        /* Large time display style */
         .large-time {
             font-size: 56pt;
             font-weight: 800;
-            color: #ff9100;
+            color: #ff9100; /* Orange for time */
         }
+        /* Small date display style */
         .small-date {
             font-size: 40pt;
             font-weight: normal;
-            color: #ffffff;
+            color: #ffffff; /* White for date */
         }
+        /* Weather container layout */
         #weather-container {
             display: flex;
             justify-content: center;
             width: 80%;
             gap: 40px;
         }
+        /* Individual weather display box */
         .weather {
             white-space: pre-line;
             text-align: center;
@@ -103,23 +115,27 @@
             padding: 12px;
             border-radius: 12px;
         }
+        /* Time display container layout */
         #time-display-container {
             display: flex;
             justify-content: center;
             width: 80%;
             gap: 40px;
         }
+        /* Column for time display */
         .time-display-column {
             text-align: center;
             line-height: 1;
             vertical-align: middle;
         }
+        /* Day/Night icon style */
         .daynight-icon {
             font-size: 32pt;
             vertical-align: middle;
             margin-left: 4px;
             line-height: 1;
         }
+        /* Vertical divider style */
         #divider {
             width: 1px;
             background-color: white;
@@ -128,19 +144,22 @@
             height: auto;
             align-self: stretch;
         }
+        /* Status text for Kitty and Kiki */
         #kitty-status, #kiki-status {
             font-size: 16pt;
-            color: #ffffff;
+            color: #ffffff; /* White text */
             margin-top: 4px;
             text-align: center;
             font-weight: 800;
         }
+        /* Container for Bangkok specific info */
         #bangkok-container, #toronto-container {
             display: flex;
             flex-direction: column;
             width: 50%;
             gap: 10px;
         }
+        /* Main container for weather and time sections */
         #main-weather-time-container {
             display: flex;
             justify-content: center;
@@ -163,7 +182,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 1; /* Ensure it's above other content */
+            z-index: 1; /* Ensure it's above other content but below price/text */
         }
         #gif-container img {
             width: 100%;
@@ -171,6 +190,7 @@
             object-fit: cover; /* Ensures the image covers the container */
         }
 
+        /* Media queries for responsiveness */
         @media (max-width: 500px) {
             html, body {
                 height: auto;
@@ -233,6 +253,11 @@
     </div>
     <div id="countdown"></div>
     <script>
+        /**
+         * Formats a Date object into a string "DD/MM/YYYY HH:MM:SS".
+         * @param {Date} dateObj - The Date object to format.
+         * @returns {string} The formatted date and time string.
+         */
         function getFormattedTime(dateObj) {
             const d = String(dateObj.getDate()).padStart(2, '0');
             const m = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -243,6 +268,11 @@
             return `${d}/${m}/${y} ${h}:${min}:${s}`;
         }
 
+        /**
+         * Determines the CSS class for temperature based on its value.
+         * @param {number} temp - The temperature in Celsius.
+         * @returns {string} The CSS class for styling.
+         */
         function getTempClass(temp) {
             if (temp <= 0) return 'temp-cold';
             if (temp <= 15) return 'temp-cool';
@@ -250,6 +280,11 @@
             return 'temp-hot';
         }
 
+        /**
+         * Returns an emoji icon based on the Open-Meteo weather code.
+         * @param {number} code - The weather code from Open-Meteo API.
+         * @returns {string} An emoji representing the weather.
+         */
         function getWeatherIcon(code) {
             const map = {
                 0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
@@ -260,15 +295,18 @@
             return map[code] || "❓";
         }
 
+        /**
+         * Fetches BTC/USDT price and updates the display, including dynamic GIF selection.
+         */
+        let lastPrice = null; // Store the last fetched price globally
         async function fetchPrice() {
             try {
                 const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
                 const data = await res.json();
                 const priceElem = document.getElementById('price');
-                const oldPrice = parseInt(priceElem.textContent); // Get the current displayed price
                 const newPrice = Math.round(parseFloat(data.price));
 
-                // Check if price has changed
+                // Check if price has changed since last fetch
                 if (priceElem.textContent !== newPrice.toString()) {
                     // Set transition for color and transform
                     priceElem.style.transition = 'transform 0.5s ease, color 2s ease-in-out';
@@ -276,13 +314,19 @@
                     // Apply scaling animation
                     priceElem.style.transform = 'scale(1.2)';
 
-                    // Apply color based on price change
-                    if (!isNaN(oldPrice)) { // Ensure oldPrice is a valid number before comparing
-                        if (newPrice > oldPrice) {
+                    // Determine GIF search term based on price change
+                    let gifSearchTerm = 'funny cats'; // Default
+                    if (lastPrice !== null) { // Only compare if a previous price exists
+                        if (newPrice > lastPrice) {
                             priceElem.style.color = '#00ff00'; // Green for increase
-                        } else if (newPrice < oldPrice) {
+                            gifSearchTerm = 'happy cats';
+                        } else if (newPrice < lastPrice) {
                             priceElem.style.color = '#ff0000'; // Red for decrease
+                            gifSearchTerm = 'sad cats';
                         }
+                    } else {
+                        // First load, fetch default funny cats
+                        gifSearchTerm = 'funny cats';
                     }
 
                     // Update text content after scaling and color change are initiated
@@ -299,15 +343,22 @@
                         }, 2000); // Wait for the 2-second color transition
                     }, 500); // Wait for the 0.5-second scale transition
 
-                    // Fetch a new random GIF when the price changes
-                    fetchFunnyCatGif();
+                    // Fetch a new GIF based on price movement
+                    fetchCatGif(gifSearchTerm);
                 }
-            } catch {
+                lastPrice = newPrice; // Update lastPrice for the next comparison
+            } catch (error) {
+                console.error("Error fetching price:", error);
                 document.getElementById('price').textContent = 'Error';
                 document.getElementById('timestamp').textContent = 'Failed to fetch price';
             }
         }
 
+        /**
+         * Fetches AQI (Air Quality Index) for a given city.
+         * @param {string} cityName - The name of the city (e.g., "Bangkok", "Toronto").
+         * @returns {Promise<number|null>} The AQI value or null if fetch fails.
+         */
         async function fetchAQI(cityName) {
             const cityMap = { "Bangkok": "bangkok", "Toronto": "toronto" };
             const cityKey = cityMap[cityName];
@@ -319,30 +370,45 @@
                 const res = await fetch(url);
                 const json = await res.json();
                 return json.status === "ok" ? json.data.aqi : null;
-            } catch {
+            } catch (e) {
+                console.error(`Error fetching AQI for ${cityName}:`, e);
                 return null;
             }
         }
 
+        /**
+         * Fetches weather data for a given city and updates the specified HTML element.
+         * @param {string} city - The name of the city.
+         * @param {number} lat - Latitude of the city.
+         * @param {number} lon - Longitude of the city.
+         * @param {string} elementId - The ID of the HTML element to update.
+         * @param {string} flagEmoji - An emoji flag for the city's country.
+         */
         async function fetchWeather(city, lat, lon, elementId, flagEmoji) {
             try {
                 const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`);
                 const d = await res.json();
                 const t = Math.round(d.current.temperature_2m);
                 const code = d.current.weather_code;
-                const mn = Math.round(d.daily.temperature_2m_min[0]); // Corrected array access
-                const mx = Math.round(d.daily.temperature_2m_max[0]); // Corrected array access
+                const mn = Math.round(d.daily.temperature_2m_min[0]);
+                const mx = Math.round(d.daily.temperature_2m_max[0]);
                 const icon = getWeatherIcon(code);
                 const cls = getTempClass(t);
                 const aqi = await fetchAQI(city);
                 const aqiText = aqi !== null ? ` (AQI: ${aqi})` : "";
                 document.getElementById(elementId).innerHTML = `${flagEmoji} ${city}:<br><span class="current-temp ${cls}">${t}°C</span> <span class="weather-icon">${icon}</span><br>L:${mn}°/H:${mx}°${aqiText}`;
             } catch (e) {
-                console.error(e);
+                console.error(`Error fetching weather for ${city}:`, e);
                 document.getElementById(elementId).textContent = `${flagEmoji} ${city} Weather: Failed to fetch`;
             }
         }
 
+        /**
+         * Caches the current UTC and local time for a specific city's timezone.
+         * This is used to calculate current time without needing continuous API calls.
+         * @param {string} cityKey - A unique key for the city (e.g., 'bangkok', 'toronto').
+         * @param {string} timeZone - The IANA timezone string (e.g., 'Asia/Bangkok').
+         */
         function cacheCityTime(cityKey, timeZone) {
             const now = new Date();
             const nowUtcMs = now.getTime();
@@ -352,6 +418,11 @@
             localStorage.setItem(`${cityKey}_timeZone`, timeZone);
         }
 
+        /**
+         * Retrieves the current time for a city using cached values.
+         * @param {string} cityKey - A unique key for the city.
+         * @returns {Date|null} The current Date object for the city's timezone, or null if cache is empty.
+         */
         function getCityTimeFromCache(cityKey) {
             const bU = Number(localStorage.getItem(`${cityKey}_baseUtcMs`));
             const bL = Number(localStorage.getItem(`${cityKey}_baseLocalMs`));
@@ -359,16 +430,24 @@
             return new Date(bL + (Date.now() - bU));
         }
 
+        /**
+         * Displays the formatted time and date in the specified HTML element.
+         * @param {string} id - The ID of the HTML element to update.
+         * @param {Date} dt - The Date object to display.
+         */
         function displayCityTime(id, dt) {
             const optsD = { weekday: 'short', day: '2-digit', month: '2-digit' };
             const optsT = { hour: '2-digit', minute: '2-digit', hour12: false };
             const date = dt.toLocaleDateString('en-GB', optsD).toUpperCase().replace(',', '');
             const time = dt.toLocaleTimeString('en-GB', optsT);
             const hr = dt.getHours();
-            const ic = (hr >= 7 && hr < 19) ? '🌞' : '🌙';
+            const ic = (hr >= 7 && hr < 19) ? '🌞' : '🌙'; // Day or night icon
             document.getElementById(id).innerHTML = `<span class="small-date">${date}</span> <span class="large-time">${time}<span class="daynight-icon">${ic}</span></span>`;
         }
 
+        /**
+         * Updates Kitty's status based on the current time in Bangkok.
+         */
         function updateKittyStatus() {
             const now = getCityTimeFromCache('bangkok');
             if (!now) return;
@@ -392,6 +471,9 @@
             document.getElementById("kitty-status").textContent = `Kitty is ${s}`;
         }
 
+        /**
+         * Updates Kiki's status based on the current time in Toronto.
+         */
         function updateKikiStatus() {
             const now = getCityTimeFromCache('toronto');
             if (!now) return;
@@ -417,21 +499,26 @@
             document.getElementById("kiki-status").textContent = `Kiki is ${s}`;
         }
 
+        /**
+         * Updates the countdown for Kiki and Kitty's Japan trip.
+         */
         function updateCountdown() {
-            // Updated current date based on current conversation date.
-            const today = new Date('2025-06-18T00:00:00'); // Explicitly set for consistent calculation
+            // Using the current date of the conversation for consistency.
+            const today = new Date('2025-06-18T00:00:00');
             const end = new Date("2025-12-31T00:00:00");
             const diffTime = Math.abs(end.getTime() - today.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             document.getElementById("countdown").textContent = `${diffDays} days to Kiki and Kitty Japan Trip`;
         }
 
-        // --- New Tenor GIF Functionality ---
-        async function fetchFunnyCatGif() {
-            const apiKey = 'AIzaSyBWke0nAfAG01Zb5br2Kjsu11Z6OQGtvDU'; // Your Tenor API key
-            const searchTerm = 'funny cats';
-            const FETCH_LIMIT = 500;
-            const limit = 500; // We only need one GIF
+        /**
+         * Fetches a random GIF from Tenor based on the provided search term.
+         * @param {string} searchTerm - The term to search for GIFs (e.g., 'happy cats', 'sad cats').
+         */
+        async function fetchCatGif(searchTerm) {
+            // Your Tenor API key. Replace with your actual key if different.
+            const apiKey = 'AIzaSyBWke0nAfAG01Zb5br2Kjsu11Z6OQGtvDU';
+            const limit = 1; // We only need one GIF
 
             try {
                 const response = await fetch(`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(searchTerm)}&key=${apiKey}&client_key=your_dashboard_app&limit=${limit}&media_filter=gif&random=true`);
@@ -446,26 +533,26 @@
 
                     const imgElement = document.createElement('img');
                     imgElement.src = gifUrl;
-                    imgElement.alt = "Funny Cat GIF";
+                    imgElement.alt = `${searchTerm} GIF`; // Dynamic alt text
                     gifContainer.appendChild(imgElement);
                 } else {
-                    console.warn("No funny cat GIFs found.");
+                    console.warn(`No GIFs found for "${searchTerm}".`);
                     document.getElementById('gif-container').textContent = "No GIF available.";
                 }
             } catch (error) {
-                console.error("Error fetching funny cat GIF:", error);
+                console.error(`Error fetching "${searchTerm}" GIF:`, error);
                 document.getElementById('gif-container').textContent = "Failed to load GIF.";
             }
         }
-        // --- End New Tenor GIF Functionality ---
 
+        // Event listener for the toggle price button
         document.getElementById("toggle-price-btn").addEventListener("click", () => {
             document.getElementById('price').classList.toggle('hidden');
             document.getElementById('timestamp').classList.toggle('hidden');
         });
 
-        // INITIAL fetches and displays
-        fetchPrice(); // This will now also trigger the first GIF fetch if price is available
+        // Initial fetches and displays when the page loads
+        fetchPrice(); // This will now also trigger the first GIF fetch (default 'funny cats')
         fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
         fetchWeather("Toronto", 43.65107, -79.347015, "weather-toronto", "🇨🇦");
         updateCountdown();
@@ -501,7 +588,6 @@
             updateKikiStatus();
         }, 1000);
 
-        // Removed: setInterval(fetchFunnyCatGif, 300000); // No longer needed as it's triggered by price change
     </script>
 </body>
 </html>
