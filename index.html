@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BTC/USDT Price + Weather + AQI</title>
+  <title>BTC/USDT Price + Weather + AQI + Cat GIF</title>
   <style>
     html, body {
       margin: 0; height: 100%;
@@ -12,12 +12,32 @@
       justify-content: center; align-items: center;
       color: #ff9100;
       font-family: 'Monospace', monospace;
+      position: relative; /* For layering */
     }
-    #price { font-size: 140pt; line-height: 1; white-space: nowrap; text-align: center; font-weight: 800; }
+    #catGif {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 300px;
+      height: 300px;
+      overflow: hidden;
+      background-color: #eee;
+      opacity: 0.5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1;
+    }
+    #price { 
+      font-size: 140pt; line-height: 1; white-space: nowrap; text-align: center; font-weight: 800; 
+      position: relative;
+      z-index: 2;
+      transition: transform 0.5s ease;
+    }
     .hidden { display: none; }
-    #toggle-price-btn { position: absolute; top: 20px; right: 20px; font-size: 20pt; background: none; border: none; color: #00ff00; cursor: pointer; }
+    #toggle-price-btn { position: absolute; top: 20px; right: 20px; font-size: 20pt; background: none; border: none; color: #00ff00; cursor: pointer; z-index: 3; }
     hr { width: 80%; border: none; border-top: 1px solid #ff9100; margin: 1px 0; }
-    .info-text { font-size: 20pt; margin-top: 1px; white-space: pre-line; text-align: center; font-weight: 800; }
+    .info-text { font-size: 20pt; margin-top: 1px; white-space: pre-line; text-align: center; font-weight: 800; position: relative; z-index: 2;}
     .current-temp { font-weight: 800; font-size: 40pt; vertical-align: middle; }
     .weather-icon { font-size: 40pt; display: inline-block; vertical-align: middle; margin-left: 8px; }
     .temp-cold { color: #00f; }
@@ -37,6 +57,7 @@
     #main-weather-time-container { display: flex; justify-content: center; width: 80%; gap: 0; align-items: stretch; }
     @media (max-width: 500px) {
       html, body { height: auto; }
+      #catGif { margin: 0 auto 10px auto; }
       #price { font-size: 80pt; white-space: normal; }
       #toggle-price-btn { top: 10px; right: 10px; font-size: 16pt; }
       #main-weather-time-container { flex-direction: column; width: 95%; gap: 20px; }
@@ -48,6 +69,9 @@
   </style>
 </head>
 <body>
+  <!-- Cat GIF displayed above price -->
+  <img id="catGif" src="" alt="Cat GIF" />
+
   <button id="toggle-price-btn">👁️</button>
   <div id="price">--</div>
   <div id="timestamp" class="info-text">Fetching...</div>
@@ -92,11 +116,39 @@
       return map[code] || "❓";
     }
 
+    // GIPHY CAT GIF Fetch - Now fetching funny cat GIFs
+    const giphyApiKey = 'kcagipE09dK95PCk7F5cL06I9BnT4bEm';
+    async function fetchCatGif() {
+      try {
+        const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${giphyApiKey}&q=funny+cat&limit=25&rating=g`);
+        const json = await res.json();
+        if(json.data && json.data.length > 0) {
+          // Pick random gif from the results
+          const randIndex = Math.floor(Math.random() * json.data.length);
+          const gifUrl = json.data[randIndex].images.fixed_width.url; // approx 200px width
+          document.getElementById('catGif').src = gifUrl;
+        }
+      } catch(e) {
+        console.error('Failed to fetch cat GIF', e);
+      }
+    }
+
     async function fetchPrice() {
       try {
         const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
         const data = await res.json();
-        document.getElementById('price').textContent = Math.round(parseFloat(data.price));
+        const priceElem = document.getElementById('price');
+        const newPrice = Math.round(parseFloat(data.price));
+        // Animate price if changed
+        if (priceElem.textContent !== newPrice.toString()) {
+          priceElem.style.transform = 'scale(1.2)';
+          setTimeout(() => {
+            priceElem.style.transform = 'scale(1)';
+          }, 500);
+          // Fetch new cat gif only when price changes
+          fetchCatGif();
+        }
+        priceElem.textContent = newPrice;
         document.getElementById('timestamp').textContent = `Updated: ${getFormattedTime(new Date())}`;
       } catch {
         document.getElementById('price').textContent = 'Error';
@@ -228,6 +280,7 @@
     updateCountdown();
     cacheCityTime('bangkok', 'Asia/Bangkok');
     cacheCityTime('toronto', 'America/Toronto');
+    fetchCatGif();
 
     function displayCityTimes() {
       const b = getCityTimeFromCache('bangkok') || new Date(),
