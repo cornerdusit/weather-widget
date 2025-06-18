@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kitty's Dashboard</title>
+  <title>BTC/USDT Price + Weather</title>
   <style>
     html, body {
       margin: 0;
@@ -116,7 +116,7 @@
     .daynight-icon {
       font-size: 32pt;
       vertical-align: middle;
-      margin-left: 10px;
+      margin-left: 4px;
       line-height: 1;
     }
 
@@ -211,11 +211,6 @@
   <div id="countdown"></div>
 
   <script>
-    const citySunData = {
-      bangkok: { sunrise: null, sunset: null },
-      toronto: { sunrise: null, sunset: null }
-    };
-
     function getFormattedTime(dateObj) {
       const day = String(dateObj.getDate()).padStart(2, '0');
       const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -261,7 +256,7 @@
 
     async function fetchWeather(city, lat, lon, elementId, flagEmoji) {
       try {
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`;
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
         const res = await fetch(weatherUrl);
         const data = await res.json();
         const temp = Math.round(data.current.temperature_2m);
@@ -269,12 +264,6 @@
         const min = Math.round(data.daily.temperature_2m_min[0]);
         const max = Math.round(data.daily.temperature_2m_max[0]);
         const icon = getWeatherIcon(code);
-        const sunrise = data.daily.sunrise[0];
-        const sunset = data.daily.sunset[0];
-        citySunData[city.toLowerCase()] = {
-          sunrise: new Date(sunrise),
-          sunset: new Date(sunset)
-        };
         const tempClass = getTempClass(temp);
         document.getElementById(elementId).innerHTML =
           `${flagEmoji} ${city}:<br>` +
@@ -287,73 +276,70 @@
       }
     }
 
-    function updateCityTime(elementId, cityKey, timeZone) {
+    function updateCityTime(elementId, timeZone) {
       const now = new Date();
-      const optionsDate = { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: timeZone };
-      const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timeZone };
+      const optionsDate = { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', timeZone };
+      const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone };
       const cityDate = now.toLocaleDateString('en-GB', optionsDate).toUpperCase().replace(',', '');
       const cityTime = now.toLocaleTimeString('en-GB', optionsTime);
-      let icon = '❓';
-      const sunData = citySunData[cityKey];
-      if (sunData && sunData.sunrise && sunData.sunset) {
-        const cityNow = new Date(now.toLocaleString('en-US', { timeZone }));
-        icon = (cityNow >= sunData.sunrise && cityNow < sunData.sunset) ? '🌞' : '🌚';
-      }
+      const hour = parseInt(cityTime.split(':')[0], 10);
+
+      const icon = (hour >= 7 && hour < 19) ? '🌞' : '🌙';
+
       document.getElementById(elementId).innerHTML =
         `<span class="small-date">${cityDate}</span> ` +
-        `<span class="large-time">${cityTime}</span>` +
-        `<span class="daynight-icon">${icon}</span>`;
+        `<span class="large-time">${cityTime}<span class="daynight-icon">${icon}</span></span>`;
     }
 
     function updateKittyStatus() {
-  const now = new Date();
-  const bangkokTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
-  const day = bangkokTime.getDay();
-  const totalMinutes = bangkokTime.getHours() * 60 + bangkokTime.getMinutes();
-  let status = 'unknown';
+      const now = new Date();
+      const bangkokTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+      const day = bangkokTime.getDay();
+      const totalMinutes = bangkokTime.getHours() * 60 + bangkokTime.getMinutes();
+      let status = 'unknown';
 
-  if (day >= 1 && day <= 5) {
-    if (totalMinutes <= 540) status = 'sleeping 😴';
-    else if (totalMinutes <= 600) status = 'going to work 🚶‍♀️';
-    else if (totalMinutes <= 780) status = 'working 💻';
-    else if (totalMinutes <= 840) status = 'having a lunch break 🍜';
-    else if (totalMinutes <= 1170) status = 'working 💻';
-    else if (totalMinutes <= 1230) status = 'going back home 🏡';
-    else if (totalMinutes <= 1290) status = 'decompressing 🧘‍♀️';
-    else if (totalMinutes <= 1350) status = 'watching News, YouTube 📺';
-    else if (totalMinutes <= 1380) status = 'doing stretching exercise 💪';
-    else status = 'sleeping 😴';
-  } else {
-    status = totalMinutes <= 540 ? 'sleeping 😴' : 'having a weekend! 🥳';
-  }
-  document.getElementById("kitty-status").textContent = `Kitty is ${status}`;
-}
+      if (day >= 1 && day <= 5) {
+        if (totalMinutes <= 540) status = 'sleeping 😴';
+        else if (totalMinutes <= 600) status = 'going to work 🚶‍♀️';
+        else if (totalMinutes <= 780) status = 'working 💻';
+        else if (totalMinutes <= 840) status = 'having a lunch break 🍜';
+        else if (totalMinutes <= 1170) status = 'working 💻';
+        else if (totalMinutes <= 1230) status = 'going back home 🏡';
+        else if (totalMinutes <= 1290) status = 'decompressing 🧘‍♀️';
+        else if (totalMinutes <= 1350) status = 'watching News, YouTube 📺';
+        else if (totalMinutes <= 1380) status = 'doing stretching exercise 💪';
+        else status = 'sleeping 😴';
+      } else {
+        status = totalMinutes <= 540 ? 'sleeping 😴' : 'having a weekend! 🥳';
+      }
+      document.getElementById("kitty-status").textContent = `Kitty is ${status}`;
+    }
 
     function updateKikiStatus() {
-  const now = new Date();
-  const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
-  const day = torontoTime.getDay();
-  const totalMinutes = torontoTime.getHours() * 60 + torontoTime.getMinutes();
-  let status = 'unknown';
+      const now = new Date();
+      const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+      const day = torontoTime.getDay();
+      const totalMinutes = torontoTime.getHours() * 60 + torontoTime.getMinutes();
+      let status = 'unknown';
 
-  if (day === 0 || day === 6) { // Weekend
-    status = totalMinutes <= 540 ? 'sleeping 😴' : 'having a weekend 🎉';
-  } else if (day === 1 || day === 3 || day === 5) { // WFH Days
-    if (totalMinutes <= 420) status = 'sleeping 😴';
-    else if (totalMinutes <= 540) status = 'preparing for WFH 💻☕';
-    else if (totalMinutes <= 1080) status = 'WFH 🏠✨';
-    else if (totalMinutes <= 1380) status = 'relaxing 📺💖';
-    else status = 'sleeping 😴';
-  } else { // Office Days (Tuesday, Thursday)
-    if (totalMinutes <= 420) status = 'sleeping 😴';
-    else if (totalMinutes <= 539) status = 'going to the office 🚗💨';
-    else if (totalMinutes <= 1080) status = 'working at the office 🏢💼';
-    else if (totalMinutes <= 1170) status = 'going back home 🏡💖';
-    else if (totalMinutes <= 1380) status = 'relaxing 🛋️😊';
-    else status = 'sleeping 😴';
-  }
-  document.getElementById("kiki-status").textContent = `Kiki is ${status}`;
-}
+      if (day === 0 || day === 6) {
+        status = totalMinutes <= 540 ? 'sleeping 😴' : 'having a weekend 🎉';
+      } else if (day === 1 || day === 3 || day === 5) {
+        if (totalMinutes <= 420) status = 'sleeping 😴';
+        else if (totalMinutes <= 540) status = 'preparing for WFH 💻☕';
+        else if (totalMinutes <= 1080) status = 'WFH 🏠✨';
+        else if (totalMinutes <= 1380) status = 'relaxing 📺💖';
+        else status = 'sleeping 😴';
+      } else {
+        if (totalMinutes <= 420) status = 'sleeping 😴';
+        else if (totalMinutes <= 539) status = 'going to the office 🚗💨';
+        else if (totalMinutes <= 1080) status = 'working at the office 🏢💼';
+        else if (totalMinutes <= 1170) status = 'going back home 🏡💖';
+        else if (totalMinutes <= 1380) status = 'relaxing 🛋️😊';
+        else status = 'sleeping 😴';
+      }
+      document.getElementById("kiki-status").textContent = `Kiki is ${status}`;
+    }
 
     function updateCountdown() {
       const today = new Date();
@@ -371,8 +357,8 @@
     fetchPrice();
     fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
     fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
-    updateCityTime('bangkok-time', 'bangkok', 'Asia/Bangkok');
-    updateCityTime('toronto-time', 'toronto', 'America/Toronto');
+    updateCityTime('bangkok-time', 'Asia/Bangkok');
+    updateCityTime('toronto-time', 'America/Toronto');
     updateKittyStatus();
     updateKikiStatus();
     updateCountdown();
@@ -381,8 +367,8 @@
     setInterval(() => {
       fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
       fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
-      updateCityTime('bangkok-time', 'bangkok', 'Asia/Bangkok');
-      updateCityTime('toronto-time', 'toronto', 'America/Toronto');
+      updateCityTime('bangkok-time', 'Asia/Bangkok');
+      updateCityTime('toronto-time', 'America/Toronto');
       updateKittyStatus();
       updateKikiStatus();
     }, 60000);
