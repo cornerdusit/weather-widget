@@ -1,145 +1,507 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tenor GIF Box</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BTC/USDT Price + Weather + AQI</title>
     <style>
-        body {
-            font-family: "Inter", sans-serif;
-            min-height: 100vh;
+        html, body {
+            margin: 0;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #ff9100;
+            font-family: 'Monospace', monospace;
+            position: relative; /* For layering */
+        }
+        #price {
+            font-size: 100pt;
+            line-height: 1;
+            white-space: nowrap;
+            text-align: center;
+            font-weight: 800;
+            position: relative;
+            z-index: 2;
+            /* Initial transition for transform, color transition will be added via JS */
+            transition: transform 0.5s ease;
+        }
+        .hidden {
+            display: none;
+        }
+        #toggle-price-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 20pt;
+            background: none;
+            border: none;
+            color: #00ff00;
+            cursor: pointer;
+            z-index: 3;
+        }
+        hr {
+            width: 80%;
+            border: none;
+            border-top: 1px solid #ff9100;
+            margin: 1px 0;
+        }
+        .info-text {
+            font-size: 20pt;
+            margin-top: 1px;
+            white-space: pre-line;
+            text-align: center;
+            font-weight: 800;
+            position: relative;
+            z-index: 2;
+        }
+        .current-temp {
+            font-weight: 800;
+            font-size: 40pt;
+            vertical-align: middle;
+        }
+        .weather-icon {
+            font-size: 40pt;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+        .temp-cold {
+            color: #00f;
+        }
+        .temp-cool {
+            color: #00ffff;
+        }
+        .temp-warm {
+            color: #ffff00;
+        }
+        .temp-hot {
+            color: #ff0000;
+        }
+        .large-time {
+            font-size: 56pt;
+            font-weight: 800;
+            color: #ff9100;
+        }
+        .small-date {
+            font-size: 40pt;
+            font-weight: normal;
+            color: #ffffff;
+        }
+        #weather-container {
+            display: flex;
+            justify-content: center;
+            width: 80%;
+            gap: 40px;
+        }
+        .weather {
+            white-space: pre-line;
+            text-align: center;
+            margin: 8px;
+            padding: 12px;
+            border-radius: 12px;
+        }
+        #time-display-container {
+            display: flex;
+            justify-content: center;
+            width: 80%;
+            gap: 40px;
+        }
+        .time-display-column {
+            text-align: center;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        .daynight-icon {
+            font-size: 32pt;
+            vertical-align: middle;
+            margin-left: 4px;
+            line-height: 1;
+        }
+        #divider {
+            width: 1px;
+            background-color: white;
+            opacity: 0.3;
+            margin: 0 20px;
+            height: auto;
+            align-self: stretch;
+        }
+        #kitty-status, #kiki-status {
+            font-size: 16pt;
+            color: #ffffff;
+            margin-top: 4px;
+            text-align: center;
+            font-weight: 800;
+        }
+        #bangkok-container, #toronto-container {
+            display: flex;
+            flex-direction: column;
+            width: 50%;
+            gap: 10px;
+        }
+        #main-weather-time-container {
+            display: flex;
+            justify-content: center;
+            width: 80%;
+            gap: 0;
+            align-items: stretch;
+        }
+
+        /* Styles for the new GIF container */
+        #gif-container {
+            position: fixed; /* Stays in place when scrolling */
+            top: 2px;
+            left: 2px;
+            width: 240px;
+            height: 240px;
+            overflow: hidden; /* Ensures the GIF stays within the container */
+            opacity: 0.4; /* 40% opacity */
+            background-color: rgba(0, 0, 0, 0.1); /* Optional: slight background for visibility */
+            border-radius: 20px; /* Optional: slightly rounded corners */
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: #000000; /* Changed to black background */
+            z-index: 1; /* Ensure it's above other content */
         }
-        .gif-container {
-            width: 300px; /* Fixed width */
-            height: 300px; /* Fixed height */
-            overflow: hidden; /* Hide anything outside the box */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #ffffff; /* White background for the box */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Subtle shadow */
-            opacity: 0.5; /* Added 50% opacity */
+        #gif-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Ensures the image covers the container */
         }
-        .gif-container video { /* Changed img to video */
-            max-width: 100%; /* Ensure video fits within the container */
-            max-height: 100%; /* Ensure video fits within the container */
-            object-fit: contain; /* Maintain aspect ratio and fit inside */
+
+        @media (max-width: 500px) {
+            html, body {
+                height: auto;
+            }
+            #price {
+                font-size: 80pt;
+                white-space: normal;
+            }
+            #toggle-price-btn {
+                top: 10px;
+                right: 10px;
+                font-size: 16pt;
+            }
+            #main-weather-time-container {
+                flex-direction: column;
+                width: 95%;
+                gap: 20px;
+            }
+            #bangkok-container, #toronto-container {
+                width: 100%;
+            }
+            #countdown {
+                margin-top: 30px;
+                font-size: 14pt;
+            }
+            body {
+                align-items: stretch;
+            }
+            #divider {
+                display: none;
+            }
+            /* Media query for smaller screens - GIF container */
+            #gif-container {
+                width: 150px;
+                height: 150px;
+                top: 10px;
+                left: 10px;
+            }
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen bg-black p-4">
-    <div id="gifBox" class="gif-container rounded-lg p-2">
-        <p class="text-gray-500 text-center">Loading Video...</p>
+<body>
+    <div id="gif-container"></div>
+    <button id="toggle-price-btn">👁️</button>
+    <div id="price">--</div>
+    <div id="timestamp" class="info-text">Fetching...</div>
+    <hr />
+    <div id="main-weather-time-container">
+        <div id="bangkok-container">
+            <div class="weather info-text" id="weather-bkk">Loading Bangkok weather...</div>
+            <div id="bangkok-time" class="time-display-column info-text">Loading Bangkok time...</div>
+            <div id="kitty-status">Kitty is ...</div>
+        </div>
+        <div id="divider"></div>
+        <div id="toronto-container">
+            <div class="weather info-text" id="weather-toronto">Loading Toronto weather...</div>
+            <div id="toronto-time" class="time-display-column info-text">Loading Toronto time...</div>
+            <div id="kiki-status">Kiki is ...</div>
+        </div>
     </div>
-
+    <div id="countdown"></div>
     <script>
-        // Self-executing anonymous function to encapsulate variables and prevent global pollution
-        (function() {
-            // Tenor API details
-            const TENOR_API_KEY = "AIzaSyBWke0nAfAG01Zb5br2Kjsu11Z6OQGtvDU"; // Your Tenor API Key
-            const SEARCH_QUERY = "sexy women"; // Search term for videos
-            const GIF_BOX_ID = "gifBox"; // ID of the HTML element to display the video
-            const FETCH_LIMIT = 500; // Number of videos to fetch to enable random selection
+        function getFormattedTime(dateObj) {
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const y = dateObj.getFullYear();
+            const h = String(dateObj.getHours()).padStart(2, '0');
+            const min = String(dateObj.getMinutes()).padStart(2, '0');
+            const s = String(dateObj.getSeconds()).padStart(2, '0');
+            return `${d}/${m}/${y} ${h}:${min}:${s}`;
+        }
 
-            // Get the video container element
-            const gifBox = document.getElementById(GIF_BOX_ID);
+        function getTempClass(temp) {
+            if (temp <= 0) return 'temp-cold';
+            if (temp <= 15) return 'temp-cool';
+            if (temp <= 25) return 'temp-warm';
+            return 'temp-hot';
+        }
 
-            /**
-             * Fetches a random MP4 video from the Tenor API based on the search query.
-             * It fetches multiple videos and then picks one randomly from the results.
-             * @returns {Promise<string|null>} A promise that resolves to the video URL or null if an error occurs.
-             */
-            async function fetchRandomVideo() { // Renamed function for clarity
-                // Construct the API URL. Requesting 'mp4' media format.
-                const url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(SEARCH_QUERY)}&key=${TENOR_API_KEY}&client_key=my_app_name&limit=${FETCH_LIMIT}&media_filter=mp4&contentfilter=off`;
+        function getWeatherIcon(code) {
+            const map = {
+                0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+                45: "🌫️", 48: "🌫️", 51: "🌦️", 53: "🌧️", 55: "🌧️",
+                61: "🌦️", 63: "🌧️", 65: "🌧️", 71: "🌨️", 73: "🌨️",
+                75: "❄️", 80: "🌦️", 81: "🌧️", 82: "🌧️", 95: "⛈️", 96: "🌩️", 99: "🌩️"
+            };
+            return map[code] || "❓";
+        }
 
-                try {
-                    // Make the fetch request to the Tenor API
-                    const response = await fetch(url);
+        async function fetchPrice() {
+            try {
+                const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+                const data = await res.json();
+                const priceElem = document.getElementById('price');
+                const oldPrice = parseInt(priceElem.textContent); // Get the current displayed price
+                const newPrice = Math.round(parseFloat(data.price));
 
-                    // Check if the request was successful
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+                // Check if price has changed
+                if (priceElem.textContent !== newPrice.toString()) {
+                    // Set transition for color and transform
+                    priceElem.style.transition = 'transform 0.5s ease, color 2s ease-in-out';
 
-                    // Parse the JSON response
-                    const data = await response.json();
+                    // Apply scaling animation
+                    priceElem.style.transform = 'scale(1.2)';
 
-                    // Check if results are available
-                    if (data.results && data.results.length > 0) {
-                        // Pick a random index from the fetched results
-                        const randomIndex = Math.floor(Math.random() * data.results.length);
-                        const randomItem = data.results[randomIndex];
-
-                        // Ensure the randomly selected item has an 'mp4' media format
-                        if (randomItem.media_formats && randomItem.media_formats.mp4) {
-                            return randomItem.media_formats.mp4.url; // Return the MP4 URL
-                        } else {
-                            console.warn("Randomly selected item has no 'mp4' media format.");
-                            return null;
+                    // Apply color based on price change
+                    if (!isNaN(oldPrice)) { // Ensure oldPrice is a valid number before comparing
+                        if (newPrice > oldPrice) {
+                            priceElem.style.color = '#00ff00'; // Green for increase
+                        } else if (newPrice < oldPrice) {
+                            priceElem.style.color = '#ff0000'; // Red for decrease
                         }
-                    } else {
-                        console.warn("No videos found for the given query.");
-                        return null;
                     }
-                } catch (error) {
-                    console.error("Error fetching video:", error);
-                    return null;
+
+                    // Update text content after scaling and color change are initiated
+                    priceElem.textContent = newPrice;
+                    document.getElementById('timestamp').textContent = `Updated: ${getFormattedTime(new Date())}`;
+
+                    // Revert scale after 0.5s and color after 2s
+                    setTimeout(() => {
+                        priceElem.style.transform = 'scale(1)';
+                        setTimeout(() => {
+                            priceElem.style.color = '#ff9100'; // Revert to original color
+                            // Reset transition to a shorter duration for the color revert
+                            priceElem.style.transition = 'transform 0.5s ease, color 0.5s ease-in-out';
+                        }, 2000); // Wait for the 2-second color transition
+                    }, 500); // Wait for the 0.5-second scale transition
+
+                    // Fetch a new random GIF when the price changes
+                    fetchFunnyCatGif();
                 }
+            } catch {
+                document.getElementById('price').textContent = 'Error';
+                document.getElementById('timestamp').textContent = 'Failed to fetch price';
             }
+        }
 
-            /**
-             * Displays a video in the specified HTML container.
-             * @param {string|null} videoUrl The URL of the video to display. If null, displays an error message.
-             */
-            function displayVideo(videoUrl) { // Renamed function for clarity
-                // Clear any existing content in the box
-                gifBox.innerHTML = ''; // Keep gifBox ID for consistency, but it now holds a video
+        async function fetchAQI(cityName) {
+            const cityMap = { "Bangkok": "bangkok", "Toronto": "toronto" };
+            const cityKey = cityMap[cityName];
+            if (!cityKey) return null;
+            try {
+                // Using a direct fetch here as the previous line had a syntax error.
+                // Assuming `token` is correctly retrieved and used in the URL.
+                const url = `https://api.waqi.info/feed/${cityKey}/?token=34c4d3884fe7f730070458872adb4dfdb1e636e3`;
+                const res = await fetch(url);
+                const json = await res.json();
+                return json.status === "ok" ? json.data.aqi : null;
+            } catch {
+                return null;
+            }
+        }
 
-                if (videoUrl) {
-                    // Create a video element instead of an image element
-                    const video = document.createElement('video');
-                    video.src = videoUrl;
-                    video.alt = SEARCH_QUERY + " Video"; // Changed alt text
-                    video.className = "rounded-md"; // Tailwind class for rounded corners
-                    video.autoplay = true; // Autoplay the video
-                    video.loop = true; // Loop the video
-                    video.muted = true; // Mute the video to allow autoplay without user interaction requirement
+        async function fetchWeather(city, lat, lon, elementId, flagEmoji) {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto`);
+                const d = await res.json();
+                const t = Math.round(d.current.temperature_2m);
+                const code = d.current.weather_code;
+                const mn = Math.round(d.daily.temperature_2m_min[0]); // Corrected array access
+                const mx = Math.round(d.daily.temperature_2m_max[0]); // Corrected array access
+                const icon = getWeatherIcon(code);
+                const cls = getTempClass(t);
+                const aqi = await fetchAQI(city);
+                const aqiText = aqi !== null ? ` (AQI: ${aqi})` : "";
+                document.getElementById(elementId).innerHTML = `${flagEmoji} ${city}:<br><span class="current-temp ${cls}">${t}°C</span> <span class="weather-icon">${icon}</span><br>L:${mn}°/H:${mx}°${aqiText}`;
+            } catch (e) {
+                console.error(e);
+                document.getElementById(elementId).textContent = `${flagEmoji} ${city} Weather: Failed to fetch`;
+            }
+        }
 
-                    // Add an onerror handler for broken videos
-                    video.onerror = () => {
-                        gifBox.innerHTML = '<p class="text-red-500 text-center">Failed to load video. Please try again.</p>';
-                    };
+        function cacheCityTime(cityKey, timeZone) {
+            const now = new Date();
+            const nowUtcMs = now.getTime();
+            const local = new Date(now.toLocaleString('en-US', { timeZone }));
+            localStorage.setItem(`${cityKey}_baseUtcMs`, nowUtcMs);
+            localStorage.setItem(`${cityKey}_baseLocalMs`, local.getTime());
+            localStorage.setItem(`${cityKey}_timeZone`, timeZone);
+        }
 
-                    // Append the video to the container
-                    gifBox.appendChild(video);
+        function getCityTimeFromCache(cityKey) {
+            const bU = Number(localStorage.getItem(`${cityKey}_baseUtcMs`));
+            const bL = Number(localStorage.getItem(`${cityKey}_baseLocalMs`));
+            if (!bU || !bL) return null;
+            return new Date(bL + (Date.now() - bU));
+        }
+
+        function displayCityTime(id, dt) {
+            const optsD = { weekday: 'short', day: '2-digit', month: '2-digit' };
+            const optsT = { hour: '2-digit', minute: '2-digit', hour12: false };
+            const date = dt.toLocaleDateString('en-GB', optsD).toUpperCase().replace(',', '');
+            const time = dt.toLocaleTimeString('en-GB', optsT);
+            const hr = dt.getHours();
+            const ic = (hr >= 7 && hr < 19) ? '🌞' : '🌙';
+            document.getElementById(id).innerHTML = `<span class="small-date">${date}</span> <span class="large-time">${time}<span class="daynight-icon">${ic}</span></span>`;
+        }
+
+        function updateKittyStatus() {
+            const now = getCityTimeFromCache('bangkok');
+            if (!now) return;
+            const d = now.getDay(); // 0 for Sunday, 1 for Monday...
+            const m = now.getHours() * 60 + now.getMinutes();
+            let s = 'unknown';
+            if (d >= 1 && d <= 5) { // Weekdays
+                s = m <= 540 ? 'sleeping 😴' : // Before 9:00 AM (9*60)
+                    m <= 600 ? 'going to work 🚶‍♀️' : // Before 10:00 AM
+                    m <= 780 ? 'working 💻' : // Before 1:00 PM (13*60)
+                    m <= 840 ? 'having a lunch break 🍜' : // Before 2:00 PM
+                    m <= 1170 ? 'working 💻' : // Before 7:30 PM (19.5*60)
+                    m <= 1230 ? 'going back home 🏡' : // Before 8:30 PM
+                    m <= 1290 ? 'decompressing 🧘‍♀️' : // Before 9:30 PM
+                    m <= 1350 ? 'watching News, YouTube 📺' : // Before 10:30 PM
+                    m <= 1380 ? 'doing stretching exercise 💪' : // Before 11:00 PM
+                    'sleeping 😴'; // After 11:00 PM
+            } else { // Weekends (Saturday and Sunday)
+                s = m <= 540 ? 'sleeping 😴' : 'having a weekend! 🥳';
+            }
+            document.getElementById("kitty-status").textContent = `Kitty is ${s}`;
+        }
+
+        function updateKikiStatus() {
+            const now = getCityTimeFromCache('toronto');
+            if (!now) return;
+            const d = now.getDay(); // 0 for Sunday, 1 for Monday...
+            const m = now.getHours() * 60 + now.getMinutes();
+            let s = 'unknown';
+            if (d === 0 || d === 6) { // Sunday or Saturday
+                s = m <= 540 ? 'sleeping 😴' : 'having a weekend 🎉';
+            } else if ([1, 3, 5].includes(d)) { // Monday, Wednesday, Friday
+                s = m <= 420 ? 'sleeping 😴' : // Before 7:00 AM (7*60)
+                    m <= 540 ? 'preparing for WFH 💻☕' : // Before 9:00 AM
+                    m <= 1080 ? 'WFH 🏠✨' : // Before 6:00 PM (18*60)
+                    m <= 1380 ? 'relaxing 📺💖' : // Before 11:00 PM
+                    'sleeping 😴'; // After 11:00 PM
+            } else { // Tuesday, Thursday
+                s = m <= 420 ? 'sleeping 😴' : // Before 7:00 AM
+                    m <= 539 ? 'going to the office 🚗💨' : // Before 8:59 AM
+                    m <= 1080 ? 'working at the office 🏢💼' : // Before 6:00 PM
+                    m <= 1170 ? 'going back home 🏡💖' : // Before 7:30 PM
+                    m <= 1380 ? 'relaxing 🛋️😊' : // Before 11:00 PM
+                    'sleeping 😴'; // After 11:00 PM
+            }
+            document.getElementById("kiki-status").textContent = `Kiki is ${s}`;
+        }
+
+        function updateCountdown() {
+            // Updated current date based on current conversation date.
+            const today = new Date('2025-06-18T00:00:00'); // Explicitly set for consistent calculation
+            const end = new Date("2025-12-31T00:00:00");
+            const diffTime = Math.abs(end.getTime() - today.getTime());
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            document.getElementById("countdown").textContent = `${diffDays} days to Kiki and Kitty Japan Trip`;
+        }
+
+        // --- New Tenor GIF Functionality ---
+        async function fetchFunnyCatGif() {
+            const apiKey = 'AIzaSyBWke0nAfAG01Zb5br2Kjsu11Z6OQGtvDU'; // Your Tenor API key
+            const searchTerm = 'funny cats';
+            const FETCH_LIMIT = 500;
+            const limit = 500; // We only need one GIF
+
+            try {
+                const response = await fetch(`https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(searchTerm)}&key=${apiKey}&client_key=your_dashboard_app&limit=${limit}&media_filter=gif&random=true`);
+                const data = await response.json();
+
+                if (data.results && data.results.length > 0) {
+                    const gifUrl = data.results[0].media_formats.gif.url; // Corrected access to gif URL
+                    const gifContainer = document.getElementById('gif-container');
+
+                    // Clear previous content
+                    gifContainer.innerHTML = '';
+
+                    const imgElement = document.createElement('img');
+                    imgElement.src = gifUrl;
+                    imgElement.alt = "Funny Cat GIF";
+                    gifContainer.appendChild(imgElement);
                 } else {
-                    // Display a message if no video URL is provided or an error occurred
-                    gifBox.innerHTML = '<p class="text-red-500 text-center">Could not load video. Check console for details.</p>';
+                    console.warn("No funny cat GIFs found.");
+                    document.getElementById('gif-container').textContent = "No GIF available.";
                 }
+            } catch (error) {
+                console.error("Error fetching funny cat GIF:", error);
+                document.getElementById('gif-container').textContent = "Failed to load GIF.";
             }
+        }
+        // --- End New Tenor GIF Functionality ---
 
-            /**
-             * Main function to update the video.
-             */
-            async function updateVideo() { // Renamed function for clarity
-                gifBox.innerHTML = '<p class="text-gray-500 text-center">Loading new Video...</p>'; // Show loading message
-                const videoUrl = await fetchRandomVideo();
-                displayVideo(videoUrl);
-            }
+        document.getElementById("toggle-price-btn").addEventListener("click", () => {
+            document.getElementById('price').classList.toggle('hidden');
+            document.getElementById('timestamp').classList.toggle('hidden');
+        });
 
-            // Initial video load when the page loads
-            window.onload = updateVideo;
+        // INITIAL fetches and displays
+        fetchPrice(); // This will now also trigger the first GIF fetch if price is available
+        fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
+        fetchWeather("Toronto", 43.65107, -79.347015, "weather-toronto", "🇨🇦");
+        updateCountdown();
 
-            // Set an interval to fetch and display a new video every 1 minute (60000 milliseconds)
-            setInterval(updateVideo, 60000); // Changed refresh interval to 60000 milliseconds (1 minute)
-        })();
+        // Initial cache and display of times and statuses
+        cacheCityTime('bangkok', 'Asia/Bangkok');
+        cacheCityTime('toronto', 'America/Toronto');
+        function displayCityTimes() {
+            const b = getCityTimeFromCache('bangkok') || new Date(); // Fallback to current local time if cache fails
+            const t = getCityTimeFromCache('toronto') || new Date(); // Fallback to current local time if cache fails
+            displayCityTime('bangkok-time', b);
+            displayCityTime('toronto-time', t);
+        }
+        displayCityTimes(); // Initial display
+        updateKittyStatus(); // Initial status update
+        updateKikiStatus(); // Initial status update
+
+        // Set intervals for updates
+        setInterval(fetchPrice, 5000); // BTC price check every 5 seconds (will trigger GIF if price changes)
+
+        // Weather, status, and cache update every 10 minutes (600,000 ms)
+        setInterval(() => {
+            fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
+            fetchWeather("Toronto", 43.65107, -79.347015, "weather-toronto", "🇨🇦");
+            cacheCityTime('bangkok', 'Asia/Bangkok'); // Refresh cache base
+            cacheCityTime('toronto', 'America/Toronto'); // Refresh cache base
+        }, 600000);
+
+        // Time displays and status updates every second (these rely on the cached time, which is updated every 10 mins)
+        setInterval(() => {
+            displayCityTimes();
+            updateKittyStatus();
+            updateKikiStatus();
+        }, 1000);
+
+        // Removed: setInterval(fetchFunnyCatGif, 300000); // No longer needed as it's triggered by price change
     </script>
 </body>
 </html>
