@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>BTC/USDT Price + Weather</title>
+  <title>Kitty's Dashboard</title>
   <style>
     html, body {
       margin: 0;
@@ -59,7 +59,6 @@
       font-weight: 800;
       font-size: 40pt;
       vertical-align: middle;
-
     }
 
     .weather-icon {
@@ -73,10 +72,6 @@
     .temp-cool { color: #00ffff; }
     .temp-warm { color: #ffff00; }
     .temp-hot { color: #ff0000; }
-
-    .aqi-good { color: #00ff00; }
-    .aqi-moderate { color: #ffff00; }
-    .aqi-bad { color: #ff0000; }
 
     .large-time {
       font-size: 56pt;
@@ -128,22 +123,27 @@
     #countdown {
       font-size: 16pt;
       color: #ffffff;
-      margin-top: 1px;
+      margin-top: 20px;
       text-align: center;
       width: 100%;
       font-weight: 800;
     }
 
-    /* Containers for Bangkok and Toronto groupings */
-    #bangkok-container,
-    #toronto-container {
+    #kitty-status, #kiki-status {
+      font-size: 16pt;
+      color: #ffffff;
+      margin-top: 4px;
+      text-align: center;
+      font-weight: 800;
+    }
+
+    #bangkok-container, #toronto-container {
       display: flex;
       flex-direction: column;
       width: 50%;
       gap: 10px;
     }
 
-    /* For desktop, side by side */
     #main-weather-time-container {
       display: flex;
       justify-content: center;
@@ -151,7 +151,6 @@
       gap: 40px;
     }
 
-    /* Mobile breakpoint for widths 500px and below */
     @media (max-width: 500px) {
       html, body {
         height: auto;
@@ -174,8 +173,7 @@
         gap: 20px;
       }
 
-      #bangkok-container,
-      #toronto-container {
+      #bangkok-container, #toronto-container {
         width: 100%;
       }
 
@@ -198,17 +196,15 @@
 
   <div id="main-weather-time-container">
     <div id="bangkok-container">
-      <div class="weather info-text" id="weather-bkk">
-        Loading Bangkok weather...
-      </div>
+      <div class="weather info-text" id="weather-bkk">Loading Bangkok weather...</div>
       <div id="bangkok-time" class="time-display-column info-text">Loading Bangkok time...</div>
+      <div id="kitty-status">Kitty is ...</div>
     </div>
 
     <div id="toronto-container">
-      <div class="weather info-text" id="weather-toronto">
-        Loading Toronto weather...
-      </div>
+      <div class="weather info-text" id="weather-toronto">Loading Toronto weather...</div>
       <div id="toronto-time" class="time-display-column info-text">Loading Toronto time...</div>
+      <div id="kiki-status">Kiki is ...</div>
     </div>
   </div>
 
@@ -235,12 +231,6 @@
       if (temp <= 15) return 'temp-cool';
       if (temp <= 25) return 'temp-warm';
       return 'temp-hot';
-    }
-
-    function getAQIClass(aqi) {
-      if (aqi <= 50) return 'aqi-good';
-      if (aqi <= 99) return 'aqi-moderate';
-      return 'aqi-bad';
     }
 
     function getWeatherIcon(code) {
@@ -272,74 +262,98 @@
     async function fetchWeather(city, lat, lon, elementId, flagEmoji) {
       try {
         const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,sunrise,sunset&timezone=auto`;
-        const aqiUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&current=us_aqi&timezone=auto`;
-
-        const [weatherRes, aqiRes] = await Promise.all([
-          fetch(weatherUrl),
-          fetch(aqiUrl)
-        ]);
-
-        const weatherData = await weatherRes.json();
-        const aqiData = await aqiRes.json();
-
-        const temp = Math.round(weatherData.current.temperature_2m);
-        const code = weatherData.current.weather_code;
-        const min = Math.round(weatherData.daily.temperature_2m_min[0]);
-        const max = Math.round(weatherData.daily.temperature_2m_max[0]);
+        const res = await fetch(weatherUrl);
+        const data = await res.json();
+        const temp = Math.round(data.current.temperature_2m);
+        const code = data.current.weather_code;
+        const min = Math.round(data.daily.temperature_2m_min[0]);
+        const max = Math.round(data.daily.temperature_2m_max[0]);
         const icon = getWeatherIcon(code);
-        const aqi = aqiData.current.us_aqi;
-        const sunrise = weatherData.daily.sunrise[0];
-        const sunset = weatherData.daily.sunset[0];
-
+        const sunrise = data.daily.sunrise[0];
+        const sunset = data.daily.sunset[0];
         citySunData[city.toLowerCase()] = {
           sunrise: new Date(sunrise),
           sunset: new Date(sunset)
         };
-
         const tempClass = getTempClass(temp);
-        const aqiClass = getAQIClass(aqi);
-
         document.getElementById(elementId).innerHTML =
           `${flagEmoji} ${city}:<br>` +
           `<span class="current-temp ${tempClass}">${temp}°C</span>` +
           `<span class="weather-icon">${icon}</span><br>` +
-          `L:${min}°/H:${max}°<br>` +
-          `AQI: <span class="${aqiClass}">${aqi}</span>`;
+          `L:${min}°/H:${max}°`;
       } catch (error) {
-        console.error(`Failed to fetch data for ${city}:`, error);
-        document.getElementById(elementId).textContent = `${flagEmoji} ${city} Weather/AQI: Failed to fetch`;
+        console.error(`Failed to fetch weather for ${city}:`, error);
+        document.getElementById(elementId).textContent = `${flagEmoji} ${city} Weather: Failed to fetch`;
       }
     }
 
     function updateCityTime(elementId, cityKey, timeZone) {
       const now = new Date();
-      const optionsDate = {
-        weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: timeZone
-      };
-      const optionsTime = {
-        hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timeZone
-      };
-
+      const optionsDate = { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', timeZone: timeZone };
+      const optionsTime = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timeZone };
       const cityDate = now.toLocaleDateString('en-GB', optionsDate).toUpperCase().replace(',', '');
       const cityTime = now.toLocaleTimeString('en-GB', optionsTime);
       let icon = '❓';
       const sunData = citySunData[cityKey];
       if (sunData && sunData.sunrise && sunData.sunset) {
-        const nowStr = now.toLocaleString('en-US', { timeZone });
-        const cityNow = new Date(nowStr);
+        const cityNow = new Date(now.toLocaleString('en-US', { timeZone }));
         icon = (cityNow >= sunData.sunrise && cityNow < sunData.sunset) ? '🌞' : '🌚';
       }
-
       document.getElementById(elementId).innerHTML =
         `<span class="small-date">${cityDate}</span> ` +
         `<span class="large-time">${cityTime}</span>` +
         `<span class="daynight-icon">${icon}</span>`;
     }
 
-    function updateWeather() {
-      fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
-      fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
-    }
+    function updateKittyStatus() {
+  const now = new Date();
+  const bangkokTime = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Bangkok' }));
+  const day = bangkokTime.getDay();
+  const totalMinutes = bangkokTime.getHours() * 60 + bangkokTime.getMinutes();
+  let status = 'unknown';
+
+  if (day >= 1 && day <= 5) {
+    if (totalMinutes <= 540) status = 'sleeping 😴';
+    else if (totalMinutes <= 600) status = 'going to work 🚶‍♀️';
+    else if (totalMinutes <= 780) status = 'working 💻';
+    else if (totalMinutes <= 840) status = 'having a lunch break 🍜';
+    else if (totalMinutes <= 1170) status = 'working 💻';
+    else if (totalMinutes <= 1230) status = 'going back home 🏡';
+    else if (totalMinutes <= 1290) status = 'decompressing 🧘‍♀️';
+    else if (totalMinutes <= 1350) status = 'watching News, YouTube 📺';
+    else if (totalMinutes <= 1380) status = 'doing stretching exercise 💪';
+    else status = 'sleeping 😴';
+  } else {
+    status = totalMinutes <= 540 ? 'sleeping 😴' : 'having a weekend! 🥳';
+  }
+  document.getElementById("kitty-status").textContent = `Kitty is ${status}`;
+}
+
+    function updateKikiStatus() {
+  const now = new Date();
+  const torontoTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+  const day = torontoTime.getDay();
+  const totalMinutes = torontoTime.getHours() * 60 + torontoTime.getMinutes();
+  let status = 'unknown';
+
+  if (day === 0 || day === 6) { // Weekend
+    status = totalMinutes <= 540 ? 'sleeping 😴' : 'having a weekend 🎉';
+  } else if (day === 1 || day === 3 || day === 5) { // WFH Days
+    if (totalMinutes <= 420) status = 'sleeping 😴';
+    else if (totalMinutes <= 540) status = 'preparing for WFH 💻☕';
+    else if (totalMinutes <= 1080) status = 'WFH 🏠✨';
+    else if (totalMinutes <= 1380) status = 'relaxing 📺💖';
+    else status = 'sleeping 😴';
+  } else { // Office Days (Tuesday, Thursday)
+    if (totalMinutes <= 420) status = 'sleeping 😴';
+    else if (totalMinutes <= 539) status = 'going to the office 🚗💨';
+    else if (totalMinutes <= 1080) status = 'working at the office 🏢💼';
+    else if (totalMinutes <= 1170) status = 'going back home 🏡💖';
+    else if (totalMinutes <= 1380) status = 'relaxing 🛋️😊';
+    else status = 'sleeping 😴';
+  }
+  document.getElementById("kiki-status").textContent = `Kiki is ${status}`;
+}
 
     function updateCountdown() {
       const today = new Date();
@@ -355,25 +369,23 @@
     });
 
     fetchPrice();
-    updateWeather();
+    fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
+    fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
     updateCityTime('bangkok-time', 'bangkok', 'Asia/Bangkok');
     updateCityTime('toronto-time', 'toronto', 'America/Toronto');
+    updateKittyStatus();
+    updateKikiStatus();
     updateCountdown();
 
-    setInterval(fetchPrice, 5000); // every 5 seconds
-    setInterval(updateWeather, 60000); // every 60 seconds
+    setInterval(fetchPrice, 5000);
     setInterval(() => {
+      fetchWeather("Bangkok", 13.7563, 100.5018, "weather-bkk", "🇹🇭");
+      fetchWeather("Toronto", 43.651070, -79.347015, "weather-toronto", "🇨🇦");
       updateCityTime('bangkok-time', 'bangkok', 'Asia/Bangkok');
       updateCityTime('toronto-time', 'toronto', 'America/Toronto');
-    }, 1000);
-
-    // Refresh countdown at midnight
-    const now = new Date();
-    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1) - now;
-    setTimeout(() => {
-      updateCountdown();
-      setInterval(updateCountdown, 86400000); // every 24h
-    }, msUntilMidnight);
+      updateKittyStatus();
+      updateKikiStatus();
+    }, 60000);
   </script>
 </body>
 </html>
